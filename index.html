@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WebChat</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --accent: #2563eb;
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+            --card-bg: #1e293b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); height: 100dvh; overflow: hidden; }
+
+        #loginScreen { position: fixed; inset: 0; z-index: 2000; background: var(--bg-dark); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-card { background: rgba(30,41,59,0.8); backdrop-filter: blur(15px); padding: 35px; border-radius: 28px; width: 100%; max-width: 380px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .login-card input { width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 12px; border: none; background: #0f172a; color: white; outline: none; }
+
+        .app-container { display: flex; height: 100dvh; width: 100vw; overflow: hidden; }
+        
+        aside { width: 350px; background: #1e293b; border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; position: relative; flex-shrink: 0; }
+        .side-header { height: 75px; padding: 0 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; }
+        .my-profile-brief { display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 1; min-width: 0; }
+        #myDisplayName { font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        #chatList { flex: 1; overflow-y: auto; padding-bottom: 80px; }
+        .chat-item { padding: 12px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .avatar { width: 48px; height: 48px; border-radius: 16px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden; flex-shrink: 0; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        .search-container { padding: 8px 15px; background: rgba(15, 23, 42, 0.4); display: none; }
+        .search-container input { width: 100%; padding: 10px; border-radius: 10px; border: none; background: #1e293b; color: white; outline: none; }
+
+        main { flex: 1; display: flex; flex-direction: column; background: var(--bg-dark); position: relative; }
+        .chat-header { height: 75px; padding: 0 15px; background: rgba(30, 41, 59, 0.9); display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
+
+        #messagesContainer { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 10px 15px; border-radius: 14px; max-width: 85%; font-size: 15px; line-height: 1.4; word-wrap: break-word; }
+        .msg b { color: #60a5fa; cursor: pointer; }
+        .msg.own { background: rgba(37, 99, 235, 0.2); align-self: flex-end; border: 1px solid rgba(37, 99, 235, 0.2); }
+        .msg.other { background: #334155; align-self: flex-start; }
+
+        footer { padding: 15px; background: #1e293b; display: flex; flex-direction: column; gap: 10px; position: relative; }
+        .input-row { display: flex; gap: 10px; align-items: center; }
+        #messageInput { flex: 1; padding: 12px; border-radius: 12px; border: none; background: #0f172a; color: white; outline: none; }
+        
+        /* Панель Эмодзи */
+        .emoji-panel { 
+            display: none; 
+            background: #1e293b; 
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px; 
+            border-radius: 15px; 
+            grid-template-columns: repeat(8, 1fr); 
+            gap: 5px; 
+            max-height: 150px; 
+            overflow-y: auto;
+            position: absolute;
+            bottom: 80px;
+            left: 15px;
+            right: 15px;
+            z-index: 100;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+        }
+        .emoji-item { font-size: 20px; cursor: pointer; text-align: center; padding: 5px; border-radius: 8px; transition: 0.2s; }
+        .emoji-item:hover { background: rgba(255,255,255,0.1); }
+
+        .full-page { position: fixed; inset: 0; background: var(--bg-dark); z-index: 1500; display: none; flex-direction: column; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .page-header { height: 70px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; }
+        .page-body { padding: 25px; text-align: center; overflow-y: auto; flex: 1; }
+        
+        .input-box { background: #1e293b; border-radius: 18px; padding: 15px; margin-bottom: 15px; text-align: left; }
+        .input-box label { font-size: 10px; color: var(--text-dim); display: block; margin-bottom: 4px; text-transform: uppercase; }
+        .input-box input, .input-box textarea, .input-box select { width: 100%; background: none; border: none; color: white; outline: none; font-size: 16px; }
+
+        .editable-avatar { width: 120px; height: 120px; border-radius: 40px; background: var(--accent); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 40px; overflow: hidden; position: relative; cursor: pointer; }
+        .editable-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        .btn-main { background: var(--accent); color: white; border: none; padding: 16px; border-radius: 16px; width: 100%; font-weight: bold; cursor: pointer; }
+        .fab { position: absolute; bottom: 25px; right: 25px; width: 60px; height: 60px; background: var(--accent); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white; cursor: pointer; z-index: 20; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+
+        @media (max-width: 768px) {
+            aside { width: 100%; position: absolute; inset: 0; }
+            .chat-active aside { display: none; }
+            main { display: none; }
+            .chat-active main { display: flex; }
+        }
+    </style>
+</head>
+<body>
+
+    <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+
+    <div id="loginScreen">
+        <div class="login-card">
+            <h1 style="margin-bottom:20px;">WebChat 🚀</h1>
+            <input type="text" id="usernameInput" placeholder="Ваш ID">
+            <input type="password" id="passwordInput" placeholder="Пароль">
+            <button onclick="login()" class="btn-main">Войти или Создать</button>
+        </div>
+    </div>
+
+    <div id="userProfilePage" class="full-page">
+        <div class="page-header">
+            <button onclick="closePage('userProfilePage')" style="background:none; border:none; color:white; font-size:24px;">←</button>
+            <b>Профиль</b>
+            <div style="width:24px;"></div>
+        </div>
+        <div class="page-body">
+            <div id="uAvatarBig" class="editable-avatar" style="cursor:default;">👤</div>
+            <h2 id="uNameDisplay" style="margin-bottom:8px;">Имя</h2>
+            <p id="uBioDisplay" style="color:var(--text-dim); margin-bottom:30px;">Описание профиля</p>
+            <button id="startPrivateBtn" class="btn-main">Начать личный чат 💬</button>
+        </div>
+    </div>
+
+    <div id="myProfilePage" class="full-page">
+        <div class="page-header">
+            <button onclick="closePage('myProfilePage')" style="background:none; border:none; color:white; font-size:24px;">←</button>
+            <b>Настройки ⚙️</b>
+            <button onclick="saveMyProfile()" style="color:var(--accent); background:none; border:none; font-weight:bold;">Готово</button>
+        </div>
+        <div class="page-body">
+            <div id="myAvatarBig" class="editable-avatar" onclick="triggerFileInput('user')">?</div>
+            <div class="input-box"><label>Ваше имя</label><input type="text" id="myEditName"></div>
+            <div class="input-box"><label>О себе</label><textarea id="myEditBio" rows="3"></textarea></div>
+            <input type="hidden" id="myEditAvatar">
+        </div>
+    </div>
+
+    <div id="groupInfoPage" class="full-page">
+        <div class="page-header">
+            <button onclick="closePage('groupInfoPage')" style="background:none; border:none; color:white; font-size:24px;">←</button>
+            <b>О чате ℹ️</b>
+            <button id="gSaveBtn" onclick="saveGroupProfile()" style="color:var(--accent); background:none; border:none; font-weight:bold;">Сохранить</button>
+        </div>
+        <div class="page-body">
+            <div id="gAvatarBig" class="editable-avatar" onclick="triggerFileInput('group')">👥</div>
+            <div class="input-box"><label>Название</label><input type="text" id="gEditName"></div>
+            <div class="input-box"><label>Описание</label><textarea id="gEditDesc" rows="3"></textarea></div>
+            <input type="hidden" id="gEditAvatar">
+        </div>
+    </div>
+
+    <div id="appContainer" class="app-container" style="display:none;">
+        <aside>
+            <div class="side-header">
+                <div class="my-profile-brief" onclick="openMyProfile()">
+                    <div id="mySmallAvatar" class="avatar" style="width:38px; height:38px; font-size:14px;">?</div>
+                    <span id="myDisplayName">...</span>
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <span style="cursor:pointer; font-size:20px;" onclick="toggleSearch()">🔍</span>
+                    <span style="cursor:pointer; font-size:20px;" onclick="openMyProfile()">⚙️</span>
+                </div>
+            </div>
+            <div id="searchContainer" class="search-container"><input type="text" id="searchInput" placeholder="Поиск..." oninput="renderList()"></div>
+            <div id="chatList"><div id="dynamicList"></div></div>
+            <div class="fab" onclick="document.getElementById('createChatPage').style.display='flex'">+</div>
+        </aside>
+
+        <main>
+            <header class="chat-header" onclick="showRoomProfile()">
+                <button onclick="event.stopPropagation(); document.body.classList.remove('chat-active')" style="background:none; border:none; color:white; font-size:24px;">←</button>
+                <div id="hAvatar" class="avatar">?</div>
+                <div style="flex:1; min-width:0;">
+                    <div id="hTitle" style="font-weight:700;">Чат</div>
+                    <div id="hDesc" style="font-size:11px; color:var(--text-dim);">информация</div>
+                </div>
+            </header>
+            
+            <div id="messagesContainer"></div>
+
+            <footer>
+                <div id="emojiPanel" class="emoji-panel"></div>
+                <div class="input-row">
+                    <button onclick="toggleEmoji()" style="background:none; border:none; font-size:22px; cursor:pointer;">😀</button>
+                    <input type="text" id="messageInput" placeholder="Сообщение...">
+                    <button onclick="sendMessage()" style="background:var(--accent); border:none; border-radius:12px; color:white; padding:10px 18px;">🚀</button>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <div id="createChatPage" class="full-page">
+        <div class="page-header">
+            <button onclick="closePage('createChatPage')">←</button>
+            <b>Новый чат ✨</b>
+            <button onclick="confirmCreateChat()">Ок</button>
+        </div>
+        <div class="page-body">
+            <div class="input-box"><label>Тип</label><select id="newChatType"><option value="group">Группа 👥</option><option value="channel">Канал 📢</option></select></div>
+            <div class="input-box"><label>Название</label><input type="text" id="newChatName"></div>
+            <div class="input-box"><label>Описание</label><textarea id="newChatDesc" rows="2"></textarea></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeLAiCwZjij3d6FZ4OzylJnaxPwlyf1Ag",
+            authDomain: "webchat-28b64.firebaseapp.com",
+            databaseURL: "https://webchat-28b64-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "webchat-28b64",
+            storageBucket: "webchat-28b64.firebasestorage.app",
+            messagingSenderId: "307131215178",
+            appId: "1:307131215178:web:0e510297256e30959825b3"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let userId = localStorage.getItem('chat_userId');
+        let currentChat = null;
+        let allUsers = {}; let allRooms = {};
+
+        // Список эмодзи
+        const emojis = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🤗","🤔","🤭","🤫","🤥","😶","😐","😑","😬","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","💩","👻","💀","☠️","👽","👾","🤖","🎃","😺","😸","😹","😻","😼","😽","🙀","😿","😾"];
+
+        function initEmojis() {
+            const panel = document.getElementById('emojiPanel');
+            emojis.forEach(e => {
+                const span = document.createElement('span');
+                span.className = 'emoji-item';
+                span.innerText = e;
+                span.onclick = () => {
+                    document.getElementById('messageInput').value += e;
+                };
+                panel.appendChild(span);
+            });
+        }
+        initEmojis();
+
+        function toggleEmoji() {
+            const p = document.getElementById('emojiPanel');
+            p.style.display = p.style.display === 'grid' ? 'none' : 'grid';
+        }
+
+        // --- Основная логика ---
+        if (userId) startApp();
+
+        async function login() {
+            const n = document.getElementById('usernameInput').value.trim();
+            const p = document.getElementById('passwordInput').value.trim();
+            if(!n || !p) return;
+            const snap = await db.ref('users/'+n).once('value');
+            if(snap.val() && snap.val().password !== p) return alert("Пароль неверный!");
+            if(!snap.val()) await db.ref('users/'+n).set({password:p, name: n, avatar: '', bio: ''});
+            userId = n; localStorage.setItem('chat_userId', n); startApp();
+        }
+
+        function startApp() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'flex';
+            db.ref('users').on('value', s => { 
+                allUsers = s.val() || {}; 
+                const me = allUsers[userId] || {};
+                document.getElementById('myDisplayName').innerText = me.name || userId;
+                document.getElementById('mySmallAvatar').innerHTML = me.avatar ? `<img src="${me.avatar}">` : userId[0];
+                renderList(); 
+            });
+            db.ref('rooms').on('value', s => { allRooms = s.val() || {}; renderList(); });
+        }
+
+        function openChat(id, type) {
+            currentChat = { id, type };
+            document.getElementById('emojiPanel').style.display = 'none';
+            document.body.classList.add('chat-active');
+            let data = (type === 'private') ? allUsers[id] : (id === 'general' ? {name:'Общий чат'} : allRooms[id]);
+            document.getElementById('hTitle').innerText = data.name || id;
+            document.getElementById('hAvatar').innerHTML = data.avatar ? `<img src="${data.avatar}">` : (type==='private'?id[0]:'👥');
+            
+            const path = type === 'private' ? [userId, id].sort().join('_') : id;
+            db.ref('messages/'+path).off();
+            db.ref('messages/'+path).limitToLast(50).on('value', snap => {
+                const container = document.getElementById('messagesContainer');
+                container.innerHTML = '';
+                snap.forEach(c => {
+                    const m = c.val();
+                    const senderName = allUsers[m.sender]?.name || m.sender;
+                    container.innerHTML += `<div class="msg ${m.sender===userId?'own':'other'}">
+                        <b onclick="viewUserProfile('${m.sender}')">${senderName}:</b> ${m.text}
+                    </div>`;
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        function viewUserProfile(uId) {
+            if(uId === userId) return openMyProfile();
+            const user = allUsers[uId];
+            if(!user) return;
+            document.getElementById('userProfilePage').style.display = 'flex';
+            document.getElementById('uAvatarBig').innerHTML = user.avatar ? `<img src="${user.avatar}">` : uId[0];
+            document.getElementById('uNameDisplay').innerText = user.name || uId;
+            document.getElementById('uBioDisplay').innerText = user.bio || "Нет информации";
+            document.getElementById('startPrivateBtn').onclick = () => {
+                closePage('userProfilePage');
+                openChat(uId, 'private');
+            };
+        }
+
+        function renderList() {
+            const list = document.getElementById('dynamicList');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            list.innerHTML = `<div class="chat-item" onclick="openChat('general', 'group')"><div class="avatar" style="background:linear-gradient(45deg,#4f46e5,#9333ea)">🌍</div><b>Общий чат</b></div>`;
+            Object.keys(allRooms).forEach(id => {
+                const r = allRooms[id];
+                if(r.name.toLowerCase().includes(search)) {
+                    list.innerHTML += `<div class="chat-item" onclick="openChat('${id}', '${r.type}')"><div class="avatar">${r.avatar ? `<img src="${r.avatar}">` : (r.type==='group'?'👥':'📢')}</div><b>${r.name}</b></div>`;
+                }
+            });
+            Object.keys(allUsers).forEach(u => {
+                if(u !== userId && (u.toLowerCase().includes(search) || (allUsers[u].name||'').toLowerCase().includes(search))) {
+                    list.innerHTML += `<div class="chat-item" onclick="openChat('${u}', 'private')"><div class="avatar">${allUsers[u].avatar ? `<img src="${allUsers[u].avatar}">` : u[0]}</div><b>${allUsers[u].name || u}</b></div>`;
+                }
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            if(input.value.trim() && currentChat) {
+                const path = currentChat.type === 'private' ? [userId, currentChat.id].sort().join('_') : currentChat.id;
+                db.ref('messages/'+path).push({sender:userId, text:input.value});
+                input.value = '';
+                document.getElementById('emojiPanel').style.display = 'none';
+            }
+        }
+
+        function showRoomProfile() {
+            if(!currentChat || currentChat.id === 'general') return;
+            if(currentChat.type === 'private') return viewUserProfile(currentChat.id);
+            const room = allRooms[currentChat.id];
+            const isCreator = room.creator === userId;
+            document.getElementById('groupInfoPage').style.display = 'flex';
+            document.getElementById('gAvatarBig').innerHTML = room.avatar ? `<img src="${room.avatar}">` : '👥';
+            document.getElementById('gEditName').value = room.name || currentChat.id;
+            document.getElementById('gEditAvatar').value = room.avatar || "";
+            document.getElementById('gEditDesc').value = room.desc || "";
+            document.getElementById('gEditName').readOnly = !isCreator;
+            document.getElementById('gEditDesc').readOnly = !isCreator;
+            document.getElementById('gSaveBtn').style.display = isCreator ? 'block' : 'none';
+        }
+
+        function saveGroupProfile() {
+            db.ref('rooms/'+currentChat.id).update({
+                name: document.getElementById('gEditName').value,
+                avatar: document.getElementById('gEditAvatar').value,
+                desc: document.getElementById('gEditDesc').value
+            });
+            closePage('groupInfoPage');
+        }
+
+        function openMyProfile() {
+            const me = allUsers[userId] || {};
+            document.getElementById('myProfilePage').style.display = 'flex';
+            document.getElementById('myAvatarBig').innerHTML = me.avatar ? `<img src="${me.avatar}">` : userId[0];
+            document.getElementById('myEditName').value = me.name || userId;
+            document.getElementById('myEditAvatar').value = me.avatar || "";
+            document.getElementById('myEditBio').value = me.bio || "";
+        }
+        function saveMyProfile() {
+            db.ref('users/'+userId).update({
+                name: document.getElementById('myEditName').value,
+                avatar: document.getElementById('myEditAvatar').value,
+                bio: document.getElementById('myEditBio').value
+            });
+            closePage('myProfilePage');
+        }
+        function confirmCreateChat() {
+            const name = document.getElementById('newChatName').value.trim();
+            if(!name) return;
+            db.ref('rooms').push({
+                name, type: document.getElementById('newChatType').value,
+                creator: userId, desc: document.getElementById('newChatDesc').value, avatar: ''
+            });
+            closePage('createChatPage');
+        }
+
+        function triggerFileInput(target) {
+            if(target === 'group') {
+                const room = allRooms[currentChat.id];
+                if(!room || room.creator !== userId) return;
+            }
+            uploadTarget = target;
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 300; canvas.height = 300;
+                    ctx.drawImage(img, 0, 0, 300, 300);
+                    const base64 = canvas.toDataURL('image/jpeg', 0.6);
+                    if(uploadTarget === 'user') {
+                        document.getElementById('myEditAvatar').value = base64;
+                        document.getElementById('myAvatarBig').innerHTML = `<img src="${base64}">`;
+                    } else {
+                        document.getElementById('gEditAvatar').value = base64;
+                        document.getElementById('gAvatarBig').innerHTML = `<img src="${base64}">`;
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function closePage(id) { document.getElementById(id).style.display = 'none'; }
+        function toggleSearch() {
+            const s = document.getElementById('searchContainer');
+            s.style.display = s.style.display === 'block' ? 'none' : 'block';
+        }
+        document.getElementById('messageInput').onkeypress = e => e.key === 'Enter' && sendMessage();
+    </script>
+</body>
+</
