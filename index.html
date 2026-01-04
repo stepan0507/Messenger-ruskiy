@@ -186,10 +186,16 @@
             bottom: 0;
             display: none;
             flex-direction: column;
+            overflow: hidden;
         }
         
         #activeChat.active {
             display: flex;
+        }
+        
+        /* Заголовок чата - фиксированный */
+        #activeChat > .chat-header {
+            flex-shrink: 0;
         }
         
         /* Заголовок чата */
@@ -207,6 +213,8 @@
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             padding: 16px;
+            padding-bottom: 20px;
+            min-height: 0;
         }
         
         /* Индикатор печати */
@@ -227,7 +235,10 @@
             background: rgba(31, 41, 55, 0.98);
             border-top: 1px solid rgba(75, 85, 99, 0.5);
             padding: 12px;
+            padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
             z-index: 100;
+            position: relative;
+            min-height: 60px;
         }
         
         /* Уведомление канала */
@@ -295,6 +306,34 @@
             #chatScreen, #chatArea, #sidebar, #activeChat {
                 height: -webkit-fill-available;
             }
+        }
+        
+        /* Дополнительные фиксы для мобильных браузеров */
+        @media screen and (max-height: 500px) {
+            #messageInputArea {
+                padding: 8px;
+                min-height: 50px;
+            }
+            #emojiPicker {
+                max-height: 120px;
+            }
+        }
+        
+        /* Убедимся что форма ввода видна */
+        #messageInputArea form {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+        
+        #messageInputArea input[type="text"] {
+            height: 40px;
+        }
+        
+        #messageInputArea button {
+            min-width: 40px;
+            min-height: 40px;
         }
     </style>
 </head>
