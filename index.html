@@ -232,13 +232,68 @@
         /* Область ввода сообщения */
         #messageInputArea {
             flex: 0 0 auto;
-            background: rgba(31, 41, 55, 0.98);
-            border-top: 1px solid rgba(75, 85, 99, 0.5);
+            background: #1f2937;
+            border-top: 1px solid #374151;
             padding: 12px;
-            padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+            padding-bottom: 12px;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
             z-index: 100;
-            position: relative;
-            min-height: 60px;
+        }
+        
+        /* Форма ввода */
+        #messageInputArea form {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        #messageInputArea input[type="text"] {
+            flex: 1;
+            min-width: 0;
+            height: 44px;
+            background: rgba(55, 65, 81, 0.5);
+            border: 1px solid #4b5563;
+            border-radius: 12px;
+            padding: 0 16px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        #messageInputArea input[type="text"]:focus {
+            outline: none;
+            border-color: #8b5cf6;
+        }
+        
+        #messageInputArea button {
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        #messageInputArea button:hover {
+            opacity: 0.8;
+        }
+        
+        #messageInputArea button[type="submit"] {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        #messageInputArea button[type="button"] {
+            background: transparent;
+            color: #9ca3af;
+        }
+        
+        #messageInputArea button[type="button"]:hover {
+            background: rgba(55, 65, 81, 0.5);
+            color: white;
         }
         
         /* Уведомление канала */
@@ -312,28 +367,10 @@
         @media screen and (max-height: 500px) {
             #messageInputArea {
                 padding: 8px;
-                min-height: 50px;
             }
             #emojiPicker {
                 max-height: 120px;
             }
-        }
-        
-        /* Убедимся что форма ввода видна */
-        #messageInputArea form {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-        }
-        
-        #messageInputArea input[type="text"] {
-            height: 40px;
-        }
-        
-        #messageInputArea button {
-            min-width: 40px;
-            min-height: 40px;
         }
     </style>
 </head>
@@ -504,28 +541,26 @@
                 </div>
                 
                 <!-- Message Input -->
-                <div id="messageInputArea" class="p-3 safe-bottom" style="display: block;">
-                    <form onsubmit="sendMessage(event)" class="flex items-center gap-2">
+                <div id="messageInputArea">
+                    <form onsubmit="sendMessage(event)">
                         <input type="file" id="fileInput" class="hidden" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar" onchange="handleFileSelect(event)">
                         
-                        <button type="button" onclick="openFilePicker()" class="p-2 hover:bg-gray-700/50 rounded-xl transition-colors text-gray-400 hover:text-white flex-shrink-0" title="Прикрепить файл или фото">
+                        <button type="button" onclick="openFilePicker()" title="Прикрепить">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
                             </svg>
                         </button>
                         
-                        <button type="button" onclick="toggleEmoji()" class="p-2 hover:bg-gray-700/50 rounded-xl transition-colors text-gray-400 hover:text-white flex-shrink-0" title="Смайлики">
+                        <button type="button" onclick="toggleEmoji()" title="Эмодзи">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </button>
                         
-                        <input type="text" id="messageInput" oninput="handleTyping()" 
-                               class="flex-1 min-w-0 bg-gray-700/50 border border-gray-600 rounded-xl px-3 py-2 focus:outline-none focus:border-purple-500 transition-colors text-sm"
-                               placeholder="Сообщение..." autocomplete="off">
+                        <input type="text" id="messageInput" oninput="handleTyping()" placeholder="Сообщение..." autocomplete="off">
                         
-                        <button type="submit" class="p-2 gradient-bg rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-purple-500/30 flex-shrink-0" title="Отправить">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <button type="submit" title="Отправить">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                             </svg>
                         </button>
