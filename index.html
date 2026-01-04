@@ -30,11 +30,9 @@
     }
 
     *{ box-sizing:border-box; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; -webkit-tap-highlight-color:transparent; }
-    html,body{ height:100%; }
+    html,body{ height:100%; margin:0; padding:0; }
 
-    /* Robust viewport height across mobile browsers */
     body{
-      margin:0;
       background:var(--bg);
       color:var(--text);
       overflow:hidden;
@@ -46,7 +44,6 @@
     .gradient-bg{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
     .gradient-green{ background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
     .gradient-orange{ background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-
     .glass{ background: rgba(255,255,255,.06); backdrop-filter: blur(14px); }
 
     /* App shell */
@@ -61,40 +58,60 @@
       overflow:hidden;
     }
 
-    /* Auth screen scrollable */
     #authScreen{ position:absolute; inset:0; overflow:auto; -webkit-overflow-scrolling:touch; }
 
-    /* Chat screen */
     #chatScreen{ position:absolute; inset:0; display:none; }
     #chatScreen.active{ display:flex; }
 
-    /* Two-panel layout base */
-    #sidebar{ width:100%; max-width:420px; min-width:320px; display:flex; flex-direction:column; height:100%; border-right:1px solid var(--border); background:rgba(15, 23, 42, .55); }
-    #chatArea{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; height:100%; background:rgba(2,6,23,.35); }
+    /* === RESPONSIVE LAYOUT === */
+    
+    /* Desktop (>1200px) */
+    #sidebar{ 
+      width:380px; 
+      min-width:320px; 
+      max-width:420px;
+      display:flex; 
+      flex-direction:column; 
+      height:100%; 
+      border-right:1px solid var(--border); 
+      background:rgba(15, 23, 42, .55); 
+    }
+    #chatArea{ 
+      flex:1 1 auto; 
+      min-width:0; 
+      display:flex; 
+      flex-direction:column; 
+      height:100%; 
+      background:rgba(2,6,23,.35); 
+    }
 
-    /* Mobile: single panel (Telegram-like) */
+    /* Tablet (769px - 1200px) */
+    @media (min-width: 769px) and (max-width: 1200px){
+      #sidebar{ width:320px; min-width:280px; max-width:350px; }
+    }
+
+    /* Mobile (<=768px) */
     @media (max-width: 768px){
-      /* One panel at a time; both are full-screen, JS toggles display */
       #chatScreen.active{ display:block; }
-      #sidebar, #chatArea{ position:absolute; inset:0; width:100%; max-width:none; min-width:0; height:100%; height:100svh; height:100dvh; }
+      #sidebar, #chatArea{ 
+        position:absolute; 
+        inset:0; 
+        width:100%; 
+        max-width:none; 
+        min-width:0; 
+        height:100%; 
+        height:100svh; 
+        height:100dvh; 
+      }
       #sidebar{ display:flex; }
       #chatArea{ display:none; }
       #chatArea.active{ display:flex; }
-
-      /* Make bubbles/media feel like TG on mobile */
-      .bubble{ max-width: 88%; }
-      .message-media img, .message-media video{ max-width: 300px; max-height: 420px; }
-      #messagesContainer{ padding:12px; }
     }
 
-    /* iOS Safari: prefer -webkit-fill-available when dvh is weird */
     @supports (height: -webkit-fill-available){
       body{ height: -webkit-fill-available; }
       #appShell{ height: -webkit-fill-available; }
     }
-
-    /* TG-like caption spacing: media on top, caption below with comfortable leading */
-    .bubble .text-sm{ line-height: 1.35; }
 
     /* Sidebar internals */
     #chatList{ flex:1 1 auto; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch; }
@@ -102,10 +119,8 @@
 
     /* Chat area internals */
     #emptyChat{ flex:1 1 auto; display:flex; align-items:center; justify-content:center; padding:24px; }
-
     #activeChat{ flex:1 1 auto; min-height:0; display:none; flex-direction:column; overflow:hidden; }
     #activeChat.active{ display:flex; }
-
     .chat-header{ flex:0 0 auto; border-bottom:1px solid var(--border); background:rgba(15, 23, 42, .85); }
 
     #messagesContainer{
@@ -113,8 +128,8 @@
       min-height:0;
       overflow:auto;
       -webkit-overflow-scrolling:touch;
-      padding:14px;
-      padding-bottom:18px;
+      padding:16px;
+      padding-bottom:20px;
     }
 
     #typingIndicator{ flex:0 0 auto; }
@@ -139,7 +154,7 @@
       background:rgba(31,41,55,.5);
       color:white;
       padding:0 14px;
-      font-size:14px;
+      font-size:15px;
       outline:none;
     }
     #messageInput:focus{ border-color: rgba(139,92,246,.9); box-shadow: 0 0 0 3px rgba(139,92,246,.15); }
@@ -152,6 +167,8 @@
       background:rgba(31,41,55,.25);
       color:#cbd5e1;
       flex:0 0 auto;
+      cursor:pointer;
+      transition: all .15s;
     }
     .icon-btn:hover{ background:rgba(31,41,55,.45); color:white; }
 
@@ -164,59 +181,144 @@
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       box-shadow: 0 8px 20px rgba(102,126,234,.28);
       flex:0 0 auto;
+      cursor:pointer;
+      transition: opacity .15s;
     }
     .send-btn:hover{ opacity:.92; }
 
     /* Scrollbars */
-    .scrollbar::-webkit-scrollbar{ width:7px; height:7px; }
+    .scrollbar::-webkit-scrollbar{ width:6px; height:6px; }
     .scrollbar::-webkit-scrollbar-thumb{ background: rgba(148,163,184,.25); border-radius:999px; }
     .scrollbar::-webkit-scrollbar-track{ background: transparent; }
 
-    /* Messages */
-    .message-row{ display:flex; }
+    /* === MESSAGES - RESPONSIVE (TG-like bubbles) === */
+    .message-row{ display:flex; margin-bottom:6px; }
     .message-row.out{ justify-content:flex-end; }
     .message-row.in{ justify-content:flex-start; }
 
+    /* The direct child wrapper inside message-row should not stretch and must be shrinkable */
+    .message-row > div{
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+      max-width:100%;
+    }
+    .message-row.out > div{ align-items:flex-end; }
+    .message-row.in > div{ align-items:flex-start; }
+
+    /* Bubble shrinks to content (no “early wrap”), but has a max width */
     .bubble{
-      max-width:min(78ch, 78%);
+      display:inline-block;
+      width: fit-content;
+      max-width: 72%;
       border-radius:18px;
-      padding:10px 12px;
+      padding:10px 14px;
       position:relative;
       overflow:hidden;
+      overflow-wrap:anywhere; /* long URLs/words won't break layout */
+      word-break: break-word;
+      text-align:left;
     }
     .bubble.out{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-top-right-radius:6px; }
     .bubble.in{ background: rgba(31,41,55,.75); border-top-left-radius:6px; border:1px solid rgba(148,163,184,.12); }
 
+    /* Tablet bubbles */
+    @media (min-width: 769px) and (max-width: 1200px){
+      .bubble{ max-width: 78%; }
+    }
+
+    /* Mobile bubbles */
+    @media (max-width: 768px){
+      .bubble{ max-width: 88%; padding: 8px 12px; }
+      #messagesContainer{ padding: 10px; }
+    }
+
+    /* Small phones */
+    @media (max-width: 400px){
+      .bubble{ max-width: 92%; padding: 7px 10px; font-size: 14px; }
+      #messagesContainer{ padding: 8px; }
+    }
+
+    .msg-wrap{ min-width:0; max-width:100%; display:flex; flex-direction:column; }
+
     .sender-line{ font-size:12px; color: rgba(167,139,250, .95); margin: 0 0 6px 2px; display:flex; align-items:center; gap:6px; }
 
-    .meta{ display:flex; justify-content:flex-end; align-items:center; gap:6px; margin-top:6px; }
+    /* Prevent time/checks from wrapping and causing bubble width jumps */
+    .meta{ display:flex; justify-content:flex-end; align-items:center; gap:6px; margin-top:6px; white-space:nowrap; }
     .meta .time{ font-size:11px; color: rgba(255,255,255,.75); }
     .bubble.in .meta .time{ color: rgba(148,163,184,.85); }
 
-    /* TG-like media: never overflow, keep within bubble */
+    /* === MEDIA IN MESSAGES - RESPONSIVE === */
     .message-media{
-      border-radius:14px;
+      border-radius:12px;
       overflow:hidden;
       border:1px solid rgba(148,163,184,.18);
       background:rgba(2,6,23,.45);
-      display:inline-block;
+      display:inline-block; /* don't stretch the bubble */
       width: fit-content;
       max-width: 100%;
     }
     .message-media img, .message-media video{
       display:block;
       width:auto;
-      max-width:360px;
-      max-height:420px;
       height:auto;
+      max-width:100%;
+      max-height:400px;
       object-fit:contain;
       background:black;
+      cursor:pointer;
     }
 
-    /* Caption under media (Telegram-like) */
-    .media-caption{ margin-top: 6px; }
+    /* Desktop media */
+    @media (min-width: 1201px){
+      .message-media img, .message-media video{ max-width: 400px; max-height: 450px; }
+    }
 
-    .file-chip{ display:flex; align-items:center; gap:10px; padding:10px; border-radius:14px; background:rgba(15,23,42,.45); border:1px solid rgba(148,163,184,.15); }
+    /* Tablet media */
+    @media (min-width: 769px) and (max-width: 1200px){
+      .message-media img, .message-media video{ max-width: 320px; max-height: 380px; }
+    }
+
+    /* Mobile media */
+    @media (max-width: 768px){
+      .message-media img, .message-media video{ max-width: 280px; max-height: 350px; }
+    }
+
+    /* Small phones media */
+    @media (max-width: 400px){
+      .message-media img, .message-media video{ max-width: 220px; max-height: 280px; }
+      .message-media{ border-radius: 10px; }
+    }
+
+    .msg-text{
+      font-size: 14px;
+      line-height: 1.4;
+      white-space: pre-wrap; /* keep line breaks if user pasted them */
+      overflow-wrap: anywhere; /* only breaks long tokens */
+      word-break: normal;
+      hyphens: auto;
+    }
+
+    .media-caption{ margin-top: 6px; }
+    .bubble .text-sm{ line-height: 1.4; }
+
+    .file-chip{ 
+      display:flex; 
+      align-items:center; 
+      gap:10px; 
+      padding:10px; 
+      border-radius:14px; 
+      background:rgba(15,23,42,.45); 
+      border:1px solid rgba(148,163,184,.15);
+      max-width: 100%;
+      min-width: 0;
+    }
+    .file-chip .min-w-0{ min-width: 0; }
+
+    @media (max-width: 768px){
+      .file-chip{ padding: 8px; gap: 8px; border-radius: 12px; }
+      .file-chip svg{ width: 24px; height: 24px; }
+    }
 
     /* Typing indicator */
     .typing-dot{ width:7px; height:7px; background:rgba(148,163,184,.9); border-radius:999px; display:inline-block; animation:typing 1.2s infinite; }
@@ -230,22 +332,32 @@
     /* Modals */
     .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:16px; z-index:70; background:rgba(0,0,0,.65); backdrop-filter: blur(6px); }
     .modal.show{ display:flex; }
-    .sheet{ width:100%; max-width:520px; border-radius:22px; border:1px solid rgba(148,163,184,.18); background:rgba(15,23,42,.92); box-shadow: 0 18px 60px rgba(0,0,0,.45); overflow:hidden; }
+    .sheet{ width:100%; max-width:520px; border-radius:22px; border:1px solid rgba(148,163,184,.18); background:rgba(15,23,42,.95); box-shadow: 0 18px 60px rgba(0,0,0,.45); overflow:hidden; max-height: 90vh; overflow-y: auto; }
 
     @media (max-width:768px){
-      .sheet{ max-width: 100%; border-radius: 22px; }
+      .modal{ padding: 10px; }
+      .sheet{ max-width: 100%; border-radius: 20px; max-height: 85vh; }
       .sheet.bottom{ align-self:flex-end; border-bottom-left-radius:0; border-bottom-right-radius:0; }
     }
 
     /* Emoji picker */
     #emojiPicker{ display:none; margin-top:10px; border-radius:16px; border:1px solid rgba(148,163,184,.15); overflow:hidden; background:rgba(15,23,42,.85); }
     #emojiPicker.show{ display:block; }
-    .emoji-tabs{ display:flex; border-bottom:1px solid rgba(148,163,184,.12); }
-    .emoji-tab{ flex:1; padding:10px 0; text-align:center; font-size:18px; color:#cbd5e1; border-bottom:2px solid transparent; background:rgba(2,6,23,.18); }
+    .emoji-tabs{ display:flex; border-bottom:1px solid rgba(148,163,184,.12); overflow-x:auto; }
+    .emoji-tab{ flex:1; min-width:40px; padding:10px 0; text-align:center; font-size:18px; color:#cbd5e1; border-bottom:2px solid transparent; background:rgba(2,6,23,.18); }
     .emoji-tab.active{ border-bottom-color: rgba(139,92,246,.9); color:white; }
-    .emoji-grid{ padding:10px; max-height:220px; overflow:auto; display:grid; grid-template-columns: repeat(8, minmax(0,1fr)); gap:6px; }
-    .emoji-btn{ border-radius:10px; padding:6px 0; font-size:20px; line-height:1; }
+    .emoji-grid{ padding:10px; max-height:200px; overflow:auto; display:grid; grid-template-columns: repeat(8, 1fr); gap:4px; }
+    .emoji-btn{ border-radius:8px; padding:5px 0; font-size:20px; line-height:1; cursor:pointer; border:none; background:transparent; }
     .emoji-btn:hover{ background:rgba(148,163,184,.12); }
+
+    @media (max-width: 768px){
+      .emoji-grid{ grid-template-columns: repeat(7, 1fr); max-height: 180px; }
+      .emoji-btn{ font-size: 22px; padding: 6px 0; }
+    }
+
+    @media (max-width: 400px){
+      .emoji-grid{ grid-template-columns: repeat(6, 1fr); }
+    }
 
     /* Developer badge */
     .dev-badge{
@@ -268,16 +380,79 @@
     /* Reaction picker */
     #reactionsPicker{ position:fixed; display:none; z-index:75; padding:8px; border-radius:16px; background:rgba(15,23,42,.92); border:1px solid rgba(148,163,184,.18); box-shadow: 0 14px 40px rgba(0,0,0,.45); }
     #reactionsPicker.show{ display:block; }
-    .reaction-btn{ font-size:22px; padding:6px; border-radius:12px; }
-    .reaction-btn:hover{ background:rgba(148,163,184,.12); transform:scale(1.08); }
+    .reaction-btn{ font-size:22px; padding:6px; border-radius:12px; border:none; background:transparent; cursor:pointer; transition: transform .15s; }
+    .reaction-btn:hover{ background:rgba(148,163,184,.12); transform:scale(1.15); }
 
     /* Image viewer */
-    #imageViewer{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:90; background:rgba(0,0,0,.9); padding:16px; }
+    #imageViewer{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:90; background:rgba(0,0,0,.95); padding:16px; }
     #imageViewer.show{ display:flex; }
+    #imageViewer img{ max-width: 95vw; max-height: 90vh; object-fit: contain; }
+
+    /* Avatar upload button */
+    .avatar-upload{
+      position:relative;
+      cursor:pointer;
+    }
+    .avatar-upload input[type="file"]{
+      position:absolute;
+      inset:0;
+      opacity:0;
+      cursor:pointer;
+    }
+    .avatar-upload-overlay{
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,.5);
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      opacity:0;
+      transition: opacity .2s;
+    }
+    .avatar-upload:hover .avatar-upload-overlay{ opacity:1; }
+
+    /* Chat avatar with image support */
+    .chat-avatar{
+      width:48px;
+      height:48px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:bold;
+      font-size:18px;
+      overflow:hidden;
+      flex-shrink:0;
+    }
+    .chat-avatar img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+
+    .chat-avatar-sm{
+      width:40px;
+      height:40px;
+      font-size:16px;
+    }
+
+    .chat-avatar-lg{
+      width:80px;
+      height:80px;
+      font-size:28px;
+    }
+
+    @media (max-width: 768px){
+      .chat-avatar{ width: 44px; height: 44px; font-size: 16px; }
+      .chat-avatar-lg{ width: 64px; height: 64px; font-size: 24px; }
+    }
 
     /* Small helpers */
     .fade-in{ animation: fade .18s ease; }
     @keyframes fade{ from{ opacity:0; transform: translateY(8px);} to{ opacity:1; transform: translateY(0);} }
+    
+    .truncate-2{ display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   </style>
 </head>
 <body>
@@ -381,7 +556,7 @@
             <button class="icon-btn md:hidden" onclick="closeChat()" title="Назад">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
-            <div id="chatAvatar" class="w-10 h-10 rounded-full gradient-bg flex items-center justify-center font-bold flex-shrink-0"></div>
+            <div id="chatAvatar" class="chat-avatar chat-avatar-sm gradient-bg"></div>
             <div class="flex-1 min-w-0">
               <h3 id="chatName" class="font-semibold truncate"></h3>
               <p id="chatStatus" class="text-xs text-slate-400 truncate"></p>
@@ -628,6 +803,21 @@
         </div>
 
         <div class="space-y-4">
+          <!-- Avatar upload -->
+          <div class="flex justify-center mb-4">
+            <div class="avatar-upload">
+              <div id="settingsAvatar" class="chat-avatar chat-avatar-lg gradient-bg cursor-pointer">
+                <span id="settingsAvatarLetter"></span>
+                <img id="settingsAvatarImg" src="" class="hidden" alt="avatar">
+              </div>
+              <input type="file" id="settingsAvatarInput" accept="image/*" onchange="handleAvatarSelect(event)">
+              <div class="avatar-upload-overlay">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              </div>
+            </div>
+          </div>
+          <p class="text-center text-xs text-slate-400 -mt-2 mb-4">Нажмите для изменения аватарки</p>
+
           <div>
             <label class="block text-sm text-slate-400 mb-1">Название</label>
             <input id="settingsName" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-violet-500">
@@ -707,6 +897,7 @@
     let pendingFile = null;
     let uploadTask = null;
     let isUploading = false;
+    let pendingAvatarFile = null;
 
     // ====== EMOJI DATA (large, TG-like categories) ======
     const EMOJI = {
@@ -1054,6 +1245,7 @@
               if(data){
                 chatInfo.name = data.name;
                 chatInfo.avatar = (data.name || '?').charAt(0).toUpperCase();
+                chatInfo.avatarUrl = data.avatarUrl || null;
                 chatInfo.members = data.members;
                 chatInfo.owner = data.owner;
                 chatInfo.description = data.description;
@@ -1094,10 +1286,18 @@
         const gradientClass = chat.type === 'group' ? 'gradient-green' : chat.type === 'channel' ? 'gradient-orange' : 'gradient-bg';
         const titleHtml = chat.type === 'private' ? getNameWithBadge(chat.name, chat.email) : escapeHtml(chat.name);
 
+        // Avatar with image support
+        let avatarHtml;
+        if(chat.avatarUrl){
+          avatarHtml = `<div class="chat-avatar ${gradientClass}"><img src="${chat.avatarUrl}" alt="avatar"></div>`;
+        } else {
+          avatarHtml = `<div class="chat-avatar ${gradientClass}">${escapeHtml(chat.avatar || '?')}</div>`;
+        }
+
         return `
           <div class="flex items-center gap-3 p-3 cursor-pointer hover:bg-white/5 transition ${isActive ? 'bg-white/5' : ''}" onclick="openChat('${chat.id}','${chat.type}')">
             <div class="relative shrink-0">
-              <div class="w-12 h-12 rounded-full ${gradientClass} grid place-items-center font-bold">${escapeHtml(chat.avatar || '?')}</div>
+              ${avatarHtml}
               ${chat.type === 'private' ? `<div class="absolute bottom-0 right-0 w-3.5 h-3.5 ${statusDot} rounded-full border-2" style="border-color: rgba(15,23,42,.9)"></div>` : ''}
             </div>
             <div class="flex-1 min-w-0">
@@ -1170,8 +1370,10 @@
         const chatData = allChats.find(c => c.id === chatId);
         if(chatData){
           currentChatData = chatData;
-          $('chatAvatar').textContent = chatData.avatar || '?';
-          $('chatAvatar').className = 'w-10 h-10 rounded-full gradient-bg flex items-center justify-center font-bold flex-shrink-0';
+          const avatarEl = $('chatAvatar');
+          avatarEl.innerHTML = '';
+          avatarEl.textContent = chatData.avatar || '?';
+          avatarEl.className = 'chat-avatar chat-avatar-sm gradient-bg';
           $('chatName').innerHTML = getNameWithBadge(chatData.name, chatData.email);
 
           database.ref(`users/${chatData.oderId}`).off('value');
@@ -1186,8 +1388,18 @@
         const data = snap.val();
         currentChatData = data;
 
-        $('chatAvatar').textContent = (data?.name || '?').charAt(0).toUpperCase();
-        $('chatAvatar').className = `w-10 h-10 rounded-full ${type === 'group' ? 'gradient-green' : 'gradient-orange'} flex items-center justify-content-center font-bold flex-shrink-0`;
+        const avatarEl = $('chatAvatar');
+        const gradientClass = type === 'group' ? 'gradient-green' : 'gradient-orange';
+        
+        if(data?.avatarUrl){
+          avatarEl.innerHTML = `<img src="${data.avatarUrl}" alt="avatar" class="w-full h-full object-cover rounded-full">`;
+          avatarEl.className = `chat-avatar chat-avatar-sm ${gradientClass} flex-shrink-0`;
+        } else {
+          avatarEl.innerHTML = '';
+          avatarEl.textContent = (data?.name || '?').charAt(0).toUpperCase();
+          avatarEl.className = `chat-avatar chat-avatar-sm ${gradientClass} flex-shrink-0`;
+        }
+        
         $('chatName').textContent = (type === 'group' ? '👥 ' : '📢 ') + (data?.name || '');
 
         const memberCount = Object.keys(data?.members || {}).length;
@@ -1306,7 +1518,7 @@
       }
 
       if(msg.text){
-        const captionClass = (msg.fileUrl && msg.fileType && (msg.fileType.startsWith('image/') || msg.fileType.startsWith('video/'))) ? 'text-sm leading-relaxed break-words media-caption' : 'text-sm leading-relaxed break-words';
+        const captionClass = (msg.fileUrl && msg.fileType && (msg.fileType.startsWith('image/') || msg.fileType.startsWith('video/'))) ? 'msg-text media-caption' : 'msg-text';
         content += `<div class="${captionClass}">${escapeHtml(msg.text)}</div>`;
       }
 
@@ -1317,7 +1529,7 @@
       row.id = `msg-${msgId}`;
 
       row.innerHTML = `
-        <div class="max-w-full">
+        <div class="msg-wrap">
           ${senderLine}
           <div class="bubble ${isOwn ? 'out' : 'in'}" oncontextmenu="showReactions(event,'${msgId}')" onclick="handleMessageTap(event,'${msgId}')">
             ${content}
@@ -2052,11 +2264,29 @@
 
       $('settingsModal').dataset.chatId = chatId;
       $('settingsModal').dataset.type = type;
+      pendingAvatarFile = null;
 
       $('settingsTitle').textContent = type === 'group' ? 'Настройки группы' : 'Настройки канала';
       $('settingsName').value = data.name || '';
       $('settingsDescription').value = data.description || '';
       $('deleteButtonText').textContent = type === 'group' ? 'Удалить группу' : 'Удалить канал';
+
+      // Avatar
+      const avatarLetter = $('settingsAvatarLetter');
+      const avatarImg = $('settingsAvatarImg');
+      const avatarContainer = $('settingsAvatar');
+      
+      avatarContainer.className = `chat-avatar chat-avatar-lg ${type === 'group' ? 'gradient-green' : 'gradient-orange'} cursor-pointer`;
+      
+      if(data.avatarUrl){
+        avatarLetter.classList.add('hidden');
+        avatarImg.classList.remove('hidden');
+        avatarImg.src = data.avatarUrl;
+      } else {
+        avatarLetter.classList.remove('hidden');
+        avatarImg.classList.add('hidden');
+        avatarLetter.textContent = (data.name || '?').charAt(0).toUpperCase();
+      }
 
       $('settingsDescriptionBlock').style.display = type === 'channel' ? 'block' : 'none';
 
@@ -2090,6 +2320,61 @@
       showModal('settingsModal');
     }
 
+    function handleAvatarSelect(event){
+      const file = event.target.files?.[0];
+      if(!file) return;
+
+      if(!file.type.startsWith('image/')){
+        showToast('⚠️','Ошибка','Выберите изображение');
+        return;
+      }
+
+      if(file.size > 5 * 1024 * 1024){
+        showToast('⚠️','Ошибка','Изображение слишком большое (макс. 5MB)');
+        return;
+      }
+
+      pendingAvatarFile = file;
+      
+      // Preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        $('settingsAvatarLetter').classList.add('hidden');
+        $('settingsAvatarImg').classList.remove('hidden');
+        $('settingsAvatarImg').src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+      
+      event.target.value = '';
+    }
+
+    async function uploadAvatarToImgBB(file){
+      return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('key', IMGBB_API_KEY);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'https://api.imgbb.com/1/upload');
+
+        xhr.onload = () => {
+          try{
+            const data = JSON.parse(xhr.responseText);
+            if(xhr.status === 200 && data.success){
+              resolve(data.data.url);
+            } else {
+              reject(new Error(data?.error?.message || 'Upload failed'));
+            }
+          } catch(err){
+            reject(new Error('Failed to parse response'));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Network error'));
+        xhr.send(formData);
+      });
+    }
+
     async function saveSettings(){
       const chatId = $('settingsModal').dataset.chatId;
       const type = $('settingsModal').dataset.type;
@@ -2101,11 +2386,25 @@
       if(type === 'channel') updates.description = description;
 
       try{
+        // Upload avatar if changed
+        if(pendingAvatarFile){
+          showToast('⏳','Загрузка','Загружаем аватарку...');
+          const avatarUrl = await uploadAvatarToImgBB(pendingAvatarFile);
+          updates.avatarUrl = avatarUrl;
+          pendingAvatarFile = null;
+        }
+
         await database.ref(`${type}s/${chatId}`).update(updates);
         showToast('✅','Успешно','Настройки сохранены');
         closeModal('settingsModal');
 
+        // Refresh current chat header if open
+        if(currentChat === chatId){
+          openChat(chatId, type);
+        }
+
         await loadAllUsers();
+        loadAllChats();
       } catch(err){
         console.error(err);
         showToast('❌','Ошибка', err.message || 'Не удалось сохранить');
