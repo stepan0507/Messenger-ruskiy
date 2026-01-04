@@ -301,23 +301,65 @@
             border-top: 1px solid rgba(75, 85, 99, 0.5);
         }
         
-        /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
+        /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ (СТАБИЛЬНАЯ ДЛЯ ВСЕХ БРАУЗЕРОВ) ===== */
         @media (max-width: 768px) {
-            #sidebar {
+            /*
+              На мобильных всегда показываем только одну панель (sidebar ИЛИ chatArea).
+              Используем динамические единицы высоты, чтобы input не уезжал за экран
+              при появлении адресной строки/клавиатуры.
+            */
+            #chatScreen {
                 position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                width: 100%;
+                inset: 0;
+                height: 100vh;
+                height: 100svh;
+                height: 100dvh;
             }
-            
+
+            #sidebar,
             #chatArea {
                 position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
+                inset: 0;
+                width: 100%;
+                height: 100vh;
+                height: 100svh;
+                height: 100dvh;
+            }
+
+            /* Когда чат открыт — sidebar полностью скрыт (управляется классом/inline стилем) */
+            #sidebar {
+                z-index: 10;
+            }
+
+            #chatArea {
+                z-index: 20;
+            }
+
+            /* Внутри chatArea активный чат — flex колонка на всю высоту */
+            #chatArea.active {
+                display: flex;
+                flex-direction: column;
+            }
+
+            #activeChat.active {
+                display: flex;
+                flex: 1 1 auto;
+                min-height: 0;
+            }
+
+            /* Сообщения должны сжиматься и скроллиться между header и input */
+            #messagesContainer {
+                flex: 1 1 auto;
+                min-height: 0;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 24px;
+            }
+
+            /* Инпут всегда снизу и не выталкивается */
+            #messageInputArea {
+                flex: 0 0 auto;
+                padding-bottom: max(10px, env(safe-area-inset-bottom));
             }
         }
         
@@ -353,11 +395,21 @@
         
         /* Фикс для iOS Safari */
         @supports (-webkit-touch-callout: none) {
-            body {
+            html, body {
                 height: -webkit-fill-available;
             }
             #chatScreen, #chatArea, #sidebar, #activeChat {
                 height: -webkit-fill-available;
+            }
+        }
+
+        /* Доп. фикс для современных мобильных браузеров: 100dvh/100svh */
+        @supports (height: 100dvh) {
+            html, body {
+                height: 100dvh;
+            }
+            #chatScreen {
+                height: 100dvh;
             }
         }
         
