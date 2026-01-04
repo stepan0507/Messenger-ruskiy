@@ -11,12 +11,26 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
-        html, body { 
+        * { 
+            font-family: 'Inter', sans-serif; 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        html { 
+            height: 100%;
+            height: -webkit-fill-available;
+        }
+        body { 
             margin: 0;
             padding: 0;
             height: 100%;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
             overflow: hidden;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
         }
         
         .chat-scroll::-webkit-scrollbar { width: 6px; }
@@ -101,88 +115,185 @@
             .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
         }
         
-        /* Основные контейнеры */
+        /* ===== ОСНОВНЫЕ КОНТЕЙНЕРЫ ===== */
+        
+        /* Главный контейнер чата */
         #chatScreen {
             display: none;
-            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             width: 100%;
+            height: 100%;
         }
         
         #chatScreen.active {
             display: flex;
+            flex-direction: row;
         }
         
+        /* Сайдбар */
         #sidebar {
             display: flex;
             flex-direction: column;
             height: 100%;
             overflow: hidden;
             width: 100%;
+            background: rgba(31, 41, 55, 0.5);
         }
         
         #chatList {
-            flex: 1;
-            overflow-y: auto;
-            min-height: 0;
-        }
-        
-        /* Chat Area - скрыт по умолчанию */
-        #chatArea {
-            display: none;
-            flex-direction: column;
-            height: 100%;
-            overflow: hidden;
-        }
-        
-        #activeChat {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            overflow: hidden;
-        }
-        
-        #messagesContainer {
-            flex: 1;
+            flex: 1 1 auto;
             overflow-y: auto;
             overflow-x: hidden;
-            min-height: 0;
+            -webkit-overflow-scrolling: touch;
         }
         
-        #messageInputArea {
-            flex-shrink: 0;
+        /* Область чата */
+        #chatArea {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            background: #111827;
+        }
+        
+        #chatArea.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Пустой чат */
+        #emptyChat {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Активный чат */
+        #activeChat {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none;
+            flex-direction: column;
+        }
+        
+        #activeChat.active {
+            display: flex;
+        }
+        
+        /* Заголовок чата */
+        .chat-header {
+            flex: 0 0 auto;
+            background: rgba(31, 41, 55, 0.95);
+            border-bottom: 1px solid rgba(75, 85, 99, 0.5);
+            z-index: 20;
+        }
+        
+        /* Контейнер сообщений */
+        #messagesContainer {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+        }
+        
+        /* Индикатор печати */
+        #typingIndicator {
+            flex: 0 0 auto;
+        }
+        
+        /* Превью загрузки */
+        #uploadPreview {
+            flex: 0 0 auto;
             background: rgba(31, 41, 55, 0.95);
             border-top: 1px solid rgba(75, 85, 99, 0.5);
-            z-index: 10;
-            position: relative;
         }
         
-        #messageInputArea.hidden {
-            display: none !important;
+        /* Область ввода сообщения */
+        #messageInputArea {
+            flex: 0 0 auto;
+            background: rgba(31, 41, 55, 0.98);
+            border-top: 1px solid rgba(75, 85, 99, 0.5);
+            padding: 12px;
+            z-index: 100;
         }
         
-        #channelNotice { flex-shrink: 0; }
-        #uploadPreview { flex-shrink: 0; }
-        #typingIndicator { flex-shrink: 0; }
+        /* Уведомление канала */
+        #channelNotice {
+            flex: 0 0 auto;
+            background: rgba(31, 41, 55, 0.95);
+            border-top: 1px solid rgba(75, 85, 99, 0.5);
+        }
         
-        /* Мобильная адаптация */
+        /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
         @media (max-width: 768px) {
-            #sidebar { width: 100%; }
-            #chatArea { width: 100%; }
+            #sidebar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+            }
+            
+            #chatArea {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+            }
         }
         
-        /* Десктоп */
+        /* ===== ДЕСКТОП ===== */
         @media (min-width: 769px) {
+            #chatScreen.active {
+                flex-direction: row;
+            }
+            
             #sidebar {
+                position: relative;
                 width: 100%;
+                max-width: 100%;
                 transition: all 0.3s ease;
             }
+            
             #sidebar.chat-open {
                 width: 384px;
                 min-width: 384px;
                 max-width: 384px;
+                flex: 0 0 384px;
             }
+            
             #chatArea {
-                flex: 1;
+                position: relative;
+                flex: 1 1 auto;
+            }
+            
+            #chatArea.active {
+                display: flex;
+            }
+        }
+        
+        /* Фикс для iOS Safari */
+        @supports (-webkit-touch-callout: none) {
+            body {
+                height: -webkit-fill-available;
+            }
+            #chatScreen, #chatArea, #sidebar, #activeChat {
+                height: -webkit-fill-available;
             }
         }
     </style>
@@ -280,8 +391,8 @@
         </div>
         
         <!-- Chat Area -->
-        <div id="chatArea" class="flex-col bg-gray-900">
-            <div id="emptyChat" class="flex-1 flex items-center justify-center">
+        <div id="chatArea" class="bg-gray-900">
+            <div id="emptyChat">
                 <div class="text-center p-4">
                     <div class="w-24 h-24 bg-gray-800 rounded-full mx-auto mb-4 flex items-center justify-center">
                         <svg class="w-12 h-12 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
@@ -293,9 +404,9 @@
                 </div>
             </div>
             
-            <div id="activeChat" class="hidden flex-col h-full">
+            <div id="activeChat">
                 <!-- Chat Header -->
-                <div class="flex-shrink-0 p-3 border-b border-gray-700/50 flex items-center gap-3 bg-gray-800/30 safe-top">
+                <div class="chat-header p-3 flex items-center gap-3 safe-top">
                     <button onclick="closeChat()" class="md:hidden p-2 hover:bg-gray-700/50 rounded-xl">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -1023,7 +1134,7 @@
                     </div>
                 </div>
                 
-                <div id="channelNotice" class="hidden p-4 border-t border-gray-700/50 bg-gray-800/30 text-center text-gray-400 safe-bottom flex-shrink-0">
+                <div id="channelNotice" class="p-4 text-center text-gray-400 safe-bottom" style="display: none;"
                     <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
                     </svg>
@@ -1470,10 +1581,27 @@
 
         function showChatScreen() {
             document.getElementById('authScreen').classList.add('hidden');
-            document.getElementById('chatScreen').classList.add('active');
-            document.getElementById('chatArea').style.display = 'none';
-            document.getElementById('sidebar').style.display = 'flex';
-            document.getElementById('sidebar').classList.remove('chat-open');
+            document.getElementById('authScreen').style.display = 'none';
+            
+            const chatScreen = document.getElementById('chatScreen');
+            chatScreen.classList.add('active');
+            chatScreen.style.display = 'flex';
+            
+            const sidebar = document.getElementById('sidebar');
+            sidebar.style.display = 'flex';
+            sidebar.classList.remove('chat-open');
+            
+            const chatArea = document.getElementById('chatArea');
+            chatArea.classList.remove('active');
+            
+            // На десктопе показываем chatArea справа
+            if (window.innerWidth >= 768) {
+                chatArea.style.display = 'flex';
+                document.getElementById('emptyChat').style.display = 'flex';
+                document.getElementById('activeChat').style.display = 'none';
+            } else {
+                chatArea.style.display = 'none';
+            }
         }
 
         async function loadUserData() {
@@ -1619,18 +1747,23 @@
             
             const sidebar = document.getElementById('sidebar');
             const chatArea = document.getElementById('chatArea');
+            const emptyChat = document.getElementById('emptyChat');
+            const activeChat = document.getElementById('activeChat');
             
+            // Мобильная версия - скрываем сайдбар
             if (window.innerWidth < 768) {
                 sidebar.style.display = 'none';
-                chatArea.style.display = 'flex';
             } else {
                 sidebar.classList.add('chat-open');
-                chatArea.style.display = 'flex';
             }
             
-            document.getElementById('emptyChat').classList.add('hidden');
-            const activeChat = document.getElementById('activeChat');
-            activeChat.classList.remove('hidden');
+            // Показываем область чата
+            chatArea.classList.add('active');
+            chatArea.style.display = 'flex';
+            
+            // Скрываем пустой чат, показываем активный
+            emptyChat.style.display = 'none';
+            activeChat.classList.add('active');
             activeChat.style.display = 'flex';
             
             if (type === 'private') {
@@ -1686,10 +1819,10 @@
             
             if (isChannel && !isOwner) {
                 messageInputArea.style.display = 'none';
-                channelNotice.classList.remove('hidden');
+                channelNotice.style.display = 'block';
             } else {
                 messageInputArea.style.display = 'block';
-                channelNotice.classList.add('hidden');
+                channelNotice.style.display = 'none';
             }
             
             loadMessages(chatId);
@@ -1700,15 +1833,25 @@
         function closeChat() {
             const sidebar = document.getElementById('sidebar');
             const chatArea = document.getElementById('chatArea');
+            const emptyChat = document.getElementById('emptyChat');
+            const activeChat = document.getElementById('activeChat');
             
+            // Показываем сайдбар
             sidebar.style.display = 'flex';
             sidebar.classList.remove('chat-open');
-            chatArea.style.display = 'none';
-            currentChat = null;
             
-            document.getElementById('activeChat').style.display = 'none';
-            document.getElementById('activeChat').classList.add('hidden');
-            document.getElementById('emptyChat').classList.remove('hidden');
+            // Скрываем область чата на мобильных
+            if (window.innerWidth < 768) {
+                chatArea.classList.remove('active');
+                chatArea.style.display = 'none';
+            }
+            
+            // Скрываем активный чат, показываем пустой
+            activeChat.classList.remove('active');
+            activeChat.style.display = 'none';
+            emptyChat.style.display = 'flex';
+            
+            currentChat = null;
         }
 
         function loadMessages(chatId) {
@@ -2844,15 +2987,37 @@
         window.addEventListener('resize', () => {
             const sidebar = document.getElementById('sidebar');
             const chatArea = document.getElementById('chatArea');
+            const emptyChat = document.getElementById('emptyChat');
+            const activeChat = document.getElementById('activeChat');
             
             if (window.innerWidth >= 768) {
+                // Десктоп - показываем оба панели
                 sidebar.style.display = 'flex';
+                chatArea.style.display = 'flex';
+                
                 if (currentChat) {
                     sidebar.classList.add('chat-open');
-                    chatArea.style.display = 'flex';
+                    chatArea.classList.add('active');
+                    emptyChat.style.display = 'none';
+                    activeChat.classList.add('active');
+                    activeChat.style.display = 'flex';
                 } else {
                     sidebar.classList.remove('chat-open');
+                    chatArea.classList.remove('active');
+                    emptyChat.style.display = 'flex';
+                    activeChat.classList.remove('active');
+                    activeChat.style.display = 'none';
+                }
+            } else {
+                // Мобильные - показываем только одну панель
+                if (currentChat) {
+                    sidebar.style.display = 'none';
+                    chatArea.style.display = 'flex';
+                    chatArea.classList.add('active');
+                } else {
+                    sidebar.style.display = 'flex';
                     chatArea.style.display = 'none';
+                    chatArea.classList.remove('active');
                 }
             }
         });
