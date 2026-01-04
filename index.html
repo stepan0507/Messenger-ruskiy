@@ -1184,47 +1184,6 @@
         <img id="viewerImage" src="" class="max-w-full max-h-full object-contain">
     </div>
     
-    <!-- Group/Channel Settings Modal -->
-    <div id="settingsModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-3xl p-6 w-full max-w-md fade-in max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold" id="settingsTitle">Настройки</h3>
-                <button onclick="closeModal('settingsModal')" class="p-2 hover:bg-gray-700 rounded-xl">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-            
-            <div class="space-y-4">
-                <!-- Название -->
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">Название</label>
-                    <input type="text" id="settingsName" class="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500">
-                </div>
-                
-                <!-- Описание (для каналов) -->
-                <div id="settingsDescriptionBlock">
-                    <label class="block text-sm text-gray-400 mb-1">Описание</label>
-                    <textarea id="settingsDescription" class="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 resize-none h-20"></textarea>
-                </div>
-                
-                <!-- Участники -->
-                <div id="settingsMembersBlock">
-                    <label class="block text-sm text-gray-400 mb-2">Участники (<span id="settingsMemberCount">0</span>)</label>
-                    <div id="settingsMembersList" class="space-y-2 max-h-48 overflow-y-auto chat-scroll"></div>
-                </div>
-                
-                <!-- Кнопки -->
-                <button onclick="saveSettings()" class="w-full gradient-bg py-3 rounded-xl font-semibold hover:opacity-90">Сохранить</button>
-                
-                <button onclick="deleteGroupOrChannel()" class="w-full py-3 bg-red-600/20 text-red-400 rounded-xl font-medium hover:bg-red-600/30 transition-colors">
-                    <span id="deleteButtonText">Удалить</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Toast -->
     <div id="toast" class="hidden fixed top-4 right-4 left-4 md:left-auto bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-xl z-50 fade-in cursor-pointer" onclick="handleToastClick()">
         <div class="flex items-center gap-3">
@@ -1496,21 +1455,11 @@
         }
 
         function loadAllChats() {
-            // Отписываемся от предыдущего слушателя чтобы избежать дубликатов
-            database.ref(`userChats/${currentUser.uid}`).off('value');
-            
             database.ref(`userChats/${currentUser.uid}`).on('value', async snapshot => {
                 const chats = snapshot.val() || {};
                 allChats = [];
                 
-                // Используем Set для предотвращения дубликатов
-                const processedChatIds = new Set();
-                
                 for (const [chatId, chatData] of Object.entries(chats)) {
-                    // Пропускаем если чат уже обработан
-                    if (processedChatIds.has(chatId)) continue;
-                    processedChatIds.add(chatId);
-                    
                     try {
                         let chatInfo = { id: chatId, ...chatData, unread: 0 };
                         
@@ -1655,20 +1604,7 @@
                 const memberCount = Object.keys(data.members || {}).length;
                 document.getElementById('chatStatus').textContent = type === 'group' ? `${memberCount} участников` : `${memberCount} подписчиков`;
                 
-                // Добавляем кнопку настроек если пользователь - владелец
-                const isOwner = data.owner === currentUser.uid;
-                if (isOwner) {
-                    document.getElementById('chatHeaderActions').innerHTML = `
-                        <button onclick="showSettings('${chatId}', '${type}')" class="p-2 hover:bg-gray-700/50 rounded-xl transition-colors" title="Настройки">
-                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                        </button>
-                    `;
-                } else {
-                    document.getElementById('chatHeaderActions').innerHTML = '';
-                }
+                document.getElementById('chatHeaderActions').innerHTML = '';
             }
             
             const isChannel = type === 'channel';
@@ -2549,157 +2485,6 @@
 
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');
-        }
-
-        // Показать настройки группы/канала
-        async function showSettings(chatId, type) {
-            const snap = await database.ref(`${type}s/${chatId}`).once('value');
-            const data = snap.val();
-            
-            if (!data || data.owner !== currentUser.uid) {
-                showToast('❌', 'Ошибка', 'У вас нет прав для редактирования');
-                return;
-            }
-            
-            document.getElementById('settingsTitle').textContent = type === 'group' ? 'Настройки группы' : 'Настройки канала';
-            document.getElementById('settingsName').value = data.name || '';
-            document.getElementById('settingsDescription').value = data.description || '';
-            document.getElementById('deleteButtonText').textContent = type === 'group' ? 'Удалить группу' : 'Удалить канал';
-            
-            // Показываем/скрываем описание (только для каналов)
-            document.getElementById('settingsDescriptionBlock').classList.toggle('hidden', type === 'group');
-            
-            // Список участников
-            const members = data.members || {};
-            const memberCount = Object.keys(members).length;
-            document.getElementById('settingsMemberCount').textContent = memberCount;
-            
-            const membersList = document.getElementById('settingsMembersList');
-            membersList.innerHTML = '';
-            
-            for (const uid of Object.keys(members)) {
-                const user = allUsers[uid];
-                if (!user) continue;
-                
-                const isOwner = uid === data.owner;
-                const isSelf = uid === currentUser.uid;
-                
-                membersList.innerHTML += `
-                    <div class="flex items-center gap-3 p-2 bg-gray-700/30 rounded-xl">
-                        <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center font-bold text-sm">${user.name ? user.name.charAt(0).toUpperCase() : '?'}</div>
-                        <div class="flex-1 min-w-0">
-                            <div class="font-medium text-sm truncate flex items-center gap-1">
-                                ${getNameWithBadge(user.name || 'Unknown', user.email)}
-                                ${isOwner ? '<span class="text-xs text-purple-400">(владелец)</span>' : ''}
-                            </div>
-                        </div>
-                        ${!isSelf && !isOwner ? `
-                            <button onclick="removeMember('${chatId}', '${type}', '${uid}')" class="p-1 text-gray-400 hover:text-red-400">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        ` : ''}
-                    </div>
-                `;
-            }
-            
-            // Сохраняем ID для использования в saveSettings
-            document.getElementById('settingsModal').dataset.chatId = chatId;
-            document.getElementById('settingsModal').dataset.type = type;
-            
-            document.getElementById('settingsModal').classList.remove('hidden');
-        }
-
-        // Сохранить настройки
-        async function saveSettings() {
-            const modal = document.getElementById('settingsModal');
-            const chatId = modal.dataset.chatId;
-            const type = modal.dataset.type;
-            
-            const name = document.getElementById('settingsName').value.trim();
-            const description = document.getElementById('settingsDescription').value.trim();
-            
-            if (!name) {
-                showToast('⚠️', 'Ошибка', 'Введите название');
-                return;
-            }
-            
-            try {
-                const updates = { name };
-                if (type === 'channel') {
-                    updates.description = description;
-                }
-                
-                await database.ref(`${type}s/${chatId}`).update(updates);
-                
-                // Обновляем заголовок чата
-                document.getElementById('chatName').textContent = (type === 'group' ? '👥 ' : '📢 ') + name;
-                
-                closeModal('settingsModal');
-                showToast('✅', 'Успешно', 'Настройки сохранены');
-                
-                // Перезагружаем данные
-                await loadAllUsers();
-            } catch (error) {
-                console.error('Error saving settings:', error);
-                showToast('❌', 'Ошибка', error.message);
-            }
-        }
-
-        // Удалить участника
-        async function removeMember(chatId, type, uid) {
-            if (!confirm('Удалить участника?')) return;
-            
-            try {
-                // Удаляем из членов группы/канала
-                await database.ref(`${type}s/${chatId}/members/${uid}`).remove();
-                
-                // Удаляем чат у пользователя
-                await database.ref(`userChats/${uid}/${chatId}`).remove();
-                
-                showToast('✅', 'Успешно', 'Участник удален');
-                
-                // Обновляем модальное окно
-                showSettings(chatId, type);
-            } catch (error) {
-                console.error('Error removing member:', error);
-                showToast('❌', 'Ошибка', error.message);
-            }
-        }
-
-        // Удалить группу/канал
-        async function deleteGroupOrChannel() {
-            const modal = document.getElementById('settingsModal');
-            const chatId = modal.dataset.chatId;
-            const type = modal.dataset.type;
-            
-            const typeName = type === 'group' ? 'группу' : 'канал';
-            if (!confirm(`Вы уверены, что хотите удалить ${typeName}? Это действие нельзя отменить.`)) return;
-            
-            try {
-                // Получаем список участников
-                const snap = await database.ref(`${type}s/${chatId}/members`).once('value');
-                const members = snap.val() || {};
-                
-                // Удаляем чат у всех участников
-                for (const uid of Object.keys(members)) {
-                    await database.ref(`userChats/${uid}/${chatId}`).remove();
-                }
-                
-                // Удаляем сообщения
-                await database.ref(`messages/${chatId}`).remove();
-                
-                // Удаляем группу/канал
-                await database.ref(`${type}s/${chatId}`).remove();
-                
-                closeModal('settingsModal');
-                closeChat();
-                showToast('✅', 'Успешно', type === 'group' ? 'Группа удалена' : 'Канал удален');
-            } catch (error) {
-                console.error('Error deleting:', error);
-                showToast('❌', 'Ошибка', error.message);
-            }
         }
 
         function toggleEmoji() {
