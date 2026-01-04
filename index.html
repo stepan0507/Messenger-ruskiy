@@ -192,12 +192,18 @@
     .scrollbar::-webkit-scrollbar-track{ background: transparent; }
 
     /* === MESSAGES - RESPONSIVE (TG-like bubbles) === */
-    .message-row{ display:flex; margin-bottom:6px; }
+    .message-row{ display:flex; width:100%; margin-bottom:6px; }
     .message-row.out{ justify-content:flex-end; }
     .message-row.in{ justify-content:flex-start; }
 
-    /* The direct child wrapper inside message-row should not stretch and must be shrinkable */
+    /*
+      IMPORTANT:
+      На некоторых браузерах (особенно Safari) "ранний перенос" случается,
+      когда обёртка сообщения сжимается по содержимому, а max-width в % считается
+      от этой маленькой ширины. Поэтому обёртка должна быть width:100%.
+    */
     .message-row > div{
+      width:100%;
       display:flex;
       flex-direction:column;
       min-width:0;
@@ -206,18 +212,21 @@
     .message-row.out > div{ align-items:flex-end; }
     .message-row.in > div{ align-items:flex-start; }
 
-    /* Bubble shrinks to content (no “early wrap”), but has a max width */
+    /* Bubble: не задаём width:fit-content, чтобы избежать странностей с расчётом ширины в flex.
+       Inline-block сам сожмётся по контенту, а max-width ограничит длинные сообщения. */
     .bubble{
       display:inline-block;
-      width: fit-content;
       max-width: 72%;
       border-radius:18px;
       padding:10px 14px;
       position:relative;
       overflow:hidden;
-      overflow-wrap:anywhere; /* long URLs/words won't break layout */
-      word-break: break-word;
       text-align:left;
+      white-space: normal;
+      /* не ломаем слова «раньше времени» */
+      overflow-wrap: normal;
+      word-break: normal;
+      hyphens: manual;
     }
     .bubble.out{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-top-right-radius:6px; }
     .bubble.in{ background: rgba(31,41,55,.75); border-top-left-radius:6px; border:1px solid rgba(148,163,184,.12); }
@@ -239,7 +248,7 @@
       #messagesContainer{ padding: 8px; }
     }
 
-    .msg-wrap{ min-width:0; max-width:100%; display:flex; flex-direction:column; }
+    .msg-wrap{ width:100%; min-width:0; max-width:100%; display:flex; flex-direction:column; }
 
     .sender-line{ font-size:12px; color: rgba(167,139,250, .95); margin: 0 0 6px 2px; display:flex; align-items:center; gap:6px; }
 
@@ -293,10 +302,13 @@
     .msg-text{
       font-size: 14px;
       line-height: 1.4;
-      white-space: pre-wrap; /* keep line breaks if user pasted them */
-      overflow-wrap: anywhere; /* only breaks long tokens */
+      max-width: 100%;
+      min-width: 0;
+      /* обычное поведение как в Telegram: короткие слова не ломаем */
+      white-space: pre-wrap;
       word-break: normal;
-      hyphens: auto;
+      overflow-wrap: break-word; /* переносим только если слово/URL реально не помещается */
+      hyphens: manual;
     }
 
     .media-caption{ margin-top: 6px; }
@@ -313,7 +325,11 @@
       max-width: 100%;
       min-width: 0;
     }
+    .file-chip *{ min-width:0; }
     .file-chip .min-w-0{ min-width: 0; }
+
+    /* Safety: nothing inside bubble should force bubble to grow wider than max-width */
+    .bubble > *{ max-width:100%; }
 
     @media (max-width: 768px){
       .file-chip{ padding: 8px; gap: 8px; border-radius: 12px; }
