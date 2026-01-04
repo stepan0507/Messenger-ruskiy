@@ -179,12 +179,11 @@
         
         /* Активный чат */
         #activeChat {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            /* Важно: никаких absolute — иначе ломается раскладка на разных браузерах */
+            position: relative;
             display: none;
+            flex: 1 1 auto;
+            min-height: 0;
             flex-direction: column;
             overflow: hidden;
         }
@@ -209,12 +208,12 @@
         /* Контейнер сообщений */
         #messagesContainer {
             flex: 1 1 auto;
+            min-height: 0; /* критично для flex в Safari/Chrome */
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             padding: 16px;
-            padding-bottom: 20px;
-            min-height: 0;
+            padding-bottom: 24px;
         }
         
         /* Индикатор печати */
@@ -229,15 +228,14 @@
             border-top: 1px solid rgba(75, 85, 99, 0.5);
         }
         
-        /* Область ввода сообщения */
+        /* Область ввода сообщения (всегда снизу внутри #activeChat) */
         #messageInputArea {
             flex: 0 0 auto;
             background: #1f2937;
             border-top: 1px solid #374151;
-            padding: 12px;
-            padding-bottom: 12px;
-            padding-bottom: max(12px, env(safe-area-inset-bottom));
-            z-index: 100;
+            padding: 10px;
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
+            z-index: 30;
         }
         
         /* Форма ввода */
@@ -1839,6 +1837,11 @@
             emptyChat.style.display = 'none';
             activeChat.classList.add('active');
             activeChat.style.display = 'flex';
+
+            // Критично: убедимся, что внутренние блоки не были скрыты/поломаны браузером
+            document.getElementById('messagesContainer').style.display = 'block';
+            document.getElementById('typingIndicator').style.display = 'none';
+            // uploadPreview по умолчанию hidden классом, не трогаем
             
             if (type === 'private') {
                 const chatData = allChats.find(c => c.id === chatId);
@@ -1902,6 +1905,12 @@
             loadMessages(chatId);
             markAsRead(chatId);
             renderChatList();
+
+            // Фикс: после открытия чата принудительно проставляем корректные дисплеи
+            requestAnimationFrame(() => {
+                const mc = document.getElementById('messagesContainer');
+                mc.scrollTop = mc.scrollHeight;
+            });
         }
 
         function closeChat() {
